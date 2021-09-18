@@ -37,12 +37,25 @@ typedef enum{
 }ds1307_rate_t;
 
 
-
+/**
+ * @brief 
+ * 
+ * @param ds1307_reg_addres 
+ * @param data 
+ * @return ds1307_err_t 
+ */
 static ds1307_err_t ds1307_write_byte(uint8_t ds1307_reg_addres, uint8_t data);
 static uint8_t ds1307_read_byte(uint8_t ds1307_reg_addres);
-static uint8_t ds1307_bcd(uint8_t data);
+static uint8_t ds1307_bcd_decode(uint8_t data);
+static uint8_t ds1307_bcd_encode(uint8_t data);
 
-
+/**
+ * @brief Write byte data from an specific address ds1307 RTC
+ * 
+ * @param ds1307_reg_addres: REG Address you can see more in datasheet page 4 figure 2
+ * @param data 
+ * @return ds1307_err_t: 0 if everything is ok
+ */
 static ds1307_err_t ds1307_write_byte(uint8_t ds1307_reg_addres, uint8_t data){
 
 	uint8_t buff[2] = {ds1307_reg_addres,data};
@@ -51,7 +64,12 @@ static ds1307_err_t ds1307_write_byte(uint8_t ds1307_reg_addres, uint8_t data){
 
 	return ret_val;
 }
-
+/**
+ * @brief Read byte data from an specific address ds1307 RTC
+ * 
+ * @param ds1307_reg_addres: REG Address you can see more in datasheet page 4 figure 2
+ * @return data: data read from reg address
+ */
 static uint8_t ds1307_read_byte(uint8_t ds1307_reg_addres){
 
 	uint8_t data;
@@ -59,54 +77,225 @@ static uint8_t ds1307_read_byte(uint8_t ds1307_reg_addres){
 	HAL_I2C_Master_Receive(&DS1307_HANDLER, DS1307_ADDRES << 1, &data, 1, DS1307_TIMEOUT);
 	return data;
 }
-
-static uint8_t ds1307_bcd(uint8_t data){
+/**
+ * @brief BCD decode
+ * 
+ * @param data: Value to convert
+ * @return uint8_t: data converted
+ */
+static uint8_t ds1307_bcd_decode(uint8_t data){
 	return (((data & 0xf0) >> 4) * 10) + (data & 0x0f);
 }
+/**
+ * @brief BCD Encode
+ * 
+ * @param data: Value to convert
+ * @return uint8_t: data converted
+ */
+static uint8_t ds1307_bcd_encode(uint8_t data){
+	return (data % 10 + ((data / 10) << 4));
+}
 
-
+/**
+ * @brief Init ds1307
+ * 
+ */
 void ds1307_init(void){
 	ds1307_set_clock_halt(0);
 }
 
-
+/**
+ * @brief 
+ * 
+ * @param halt 
+ */
 void ds1307_set_clock_halt(uint8_t halt){
 	uint8_t ch = (halt ? 1 << 7 : 0);
 	ds1307_write_byte(DS1307_SECONDS, ch | (ds1307_read_byte(DS1307_SECONDS) & 0x7F));
 }
-
+/**
+ * @brief 
+ * 
+ * @return uint8_t 
+ */
 uint8_t ds1307_get_clock_halt(void){
 	return (ds1307_read_byte(DS1307_SECONDS) & 0x80) >> 7;
 }
 
-
+/**
+ * @brief 
+ * 
+ * @param hour 
+ * @return ds1307_err_t 
+ */
 ds1307_err_t ds1307_set_hour(uint8_t hour){
-	return ds1307_write_byte(DS1307_HOURS,ds1307_bcd(hour & 0x3F));
+	return ds1307_write_byte(DS1307_HOURS,ds1307_bcd_encode(hour & 0x3F));
 }
-
+/**
+ * @brief 
+ * 
+ * @return uint8_t 
+ */
 uint8_t ds1307_get_hour(void){
-	return ds1307_bcd (ds1307_read_byte(DS1307_HOURS) & 0x3F);
+	return ds1307_bcd_decode(ds1307_read_byte(DS1307_HOURS) & 0x3F);
 }
 
-
+/**
+ * @brief 
+ * 
+ * @param second 
+ */
 void ds1307_set_second(uint8_t second){
 	uint8_t val = ds1307_get_clock_halt();
-	ds1307_write_byte(DS1307_SECONDS, ds1307_bcd(second | val));
+	ds1307_write_byte(DS1307_SECONDS, ds1307_bcd_encode(second | val));
 
 }
-
+/**
+ * @brief 
+ * 
+ * @return uint8_t 
+ */
 uint8_t ds1307_get_second(void){
-	return ds1307_bcd(ds1307_read_byte(DS1307_SECONDS) & 0x7F);
+	return ds1307_bcd_decode(ds1307_read_byte(DS1307_SECONDS) & 0x7F);
 }
-
+/**
+ * @brief 
+ * 
+ * @param minutes 
+ */
 void ds1307_set_minutes(uint8_t minutes){
-	ds1307_write_byte(DS1307_MINUTES, ds1307_bcd(minutes));
+	ds1307_write_byte(DS1307_MINUTES, ds1307_bcd_encode(minutes));
 }
-
+/**
+ * @brief 
+ * 
+ * @return uint8_t 
+ */
 uint8_t ds1307_get_minutes(void){
-	return ds1307_read_byte(ds1307_bcd(DS1307_MINUTES));
+	return ds1307_read_byte(ds1307_bcd_decode(DS1307_MINUTES));
+}
+/**
+ * @brief 
+ * 
+ * @param day 
+ */
+void ds1307_set_day(uint8_t day){
+	ds1307_write_byte(DS1307_DAY, ds1307_bcd_encode(day));
+}
+/**
+ * @brief 
+ * 
+ * @return ds1307_days_t 
+ */
+ds1307_days_t ds1307_get_day(void){
+	return ds1307_read_byte(ds1307_bcd_decode(DS1307_DAY));
 }
 
+
+/**
+ * @brief 
+ * 
+ * @param date 
+ */
+void ds1307_set_date(uint8_t date){
+	ds1307_write_byte(DS1307_DATE, ds1307_bcd_encode(date));
+}
+/**
+ * @brief 
+ * 
+ * @return uint8_t 
+ */
+uint8_t ds1307_get_date(void){
+	return ds1307_bcd_decode(ds1307_read_byte(DS1307_DATE));
+}
+
+/**
+ * @brief 
+ * 
+ * @param month 
+ */
+void ds1307_set_month(ds1307_months_t month){
+	ds1307_write_byte(DS1307_MONTH, ds1307_bcd_encode(month));
+}
+/**
+ * @brief 
+ * 
+ * @return ds1307_months_t 
+ */
+ds1307_months_t ds1307_get_month(void){
+	return ds1307_read_byte(ds1307_bcd_decode(DS1307_MONTH));
+}
+/**
+ * @brief 
+ * 
+ * @param year 
+ */
+void ds1307_set_year(uint16_t year){
+	ds1307_write_byte(DS1307_REG_CENT, year / 100);
+	ds1307_write_byte(DS1307_YEAR, ds1307_bcd_encode(year % 100));
+}
+/**
+ * @brief 
+ * 
+ * @return uint16_t 
+ */
+uint16_t ds1307_get_year(void){
+	uint16_t cen = ds1307_read_byte(DS1307_REG_CENT) * 100;
+	return ds1307_bcd_decode(ds1307_read_byte(DS1307_YEAR)) + cen;
+
+}
+
+void ds1307_set_time_zone(int8_t hr, uint8_t min){
+	ds1307_write_byte(DS1307_REG_UTC_HR, hr);
+	ds1307_write_byte(DS1307_REG_UTC_MIN, min);
+}
+
+int8_t ds1307_get_time_zone_hour(void){
+	return ds1307_read_byte(DS1307_REG_UTC_HR);
+}
+
+int8_t ds1307_get_time_zone_min(void){
+	return ds1307_read_byte(DS1307_REG_UTC_MIN);
+}
+
+
+/**
+ * @brief 
+ * 
+ * @param dev 
+ */
+void ds1307_update(ds1307_dev_t *ds1307_dev){
+
+	ds1307_dev->seconds = ds1307_get_second();
+	ds1307_dev->minutes = ds1307_get_minutes();
+	ds1307_dev->hours = ds1307_get_hour();
+	ds1307_dev->day = ds1307_get_day();
+	ds1307_dev->date = ds1307_get_date();
+	ds1307_dev->month = ds1307_get_month();
+	ds1307_dev->year = ds1307_get_year();
+	ds1307_dev->t_zone_hour = ds1307_get_time_zone_hour();
+	ds1307_dev->t_zone_min = ds1307_get_time_zone_min();
+}
+
+void ds1307_config(uint8_t seconds, uint8_t minutes, uint8_t hours,ds1307_days_t day, uint8_t date,
+					ds1307_months_t month, uint16_t year, int8_t t_zone_hour, int8_t t_zone_min)
+{
+	ds1307_set_second(seconds);
+	ds1307_set_minutes(minutes);
+	ds1307_set_hour(hours);
+	ds1307_set_day(day);
+	ds1307_set_date(date);
+	ds1307_set_month(month);
+	ds1307_set_year(year);
+	ds1307_set_time_zone(t_zone_hour, t_zone_min);
+
+}
+/**
+ * @brief 
+ * 
+ * @param I2Chnd 
+ * @param delay_ 
+ */
 void start_i2c_scan(I2C_HandleTypeDef *I2Chnd, uint32_t delay_){
 
 	HAL_StatusTypeDef status;
