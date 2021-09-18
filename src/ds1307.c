@@ -172,7 +172,8 @@ void ds1307_set_minutes(uint8_t minutes){
  * @return uint8_t 
  */
 uint8_t ds1307_get_minutes(void){
-	return ds1307_read_byte(ds1307_bcd_decode(DS1307_MINUTES));
+	return ds1307_bcd_decode(ds1307_read_byte(DS1307_MINUTES));
+
 }
 /**
  * @brief 
@@ -289,6 +290,11 @@ void ds1307_config(uint8_t seconds, uint8_t minutes, uint8_t hours,ds1307_days_t
 	ds1307_set_year(year);
 	ds1307_set_time_zone(t_zone_hour, t_zone_min);
 
+}
+
+void ds1307_log_uart(ds1307_dev_t *ds1307_dev){
+	DBG_print("%d:%d:%d %d:%d:%d\n",ds1307_dev->hours,ds1307_dev->minutes,ds1307_dev->seconds,
+			ds1307_dev->day,ds1307_dev->date,ds1307_dev->year);
 }
 /**
  * @brief 

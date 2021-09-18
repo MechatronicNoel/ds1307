@@ -52,8 +52,8 @@ typedef struct {
 	uint8_t 		hours;
 	ds1307_days_t 	day;
 	uint8_t 		date;
-	uint8_t 		month;
-	uint16_t year;
+	ds1307_months_t	month;
+	uint16_t 		year;
 	int8_t 			t_zone_hour;
 	int8_t			t_zone_min;
 
@@ -93,6 +93,8 @@ int8_t ds1307_get_time_zone_min(void);
 void ds1307_update(ds1307_dev_t *ds1307_dev);
 void ds1307_config(uint8_t seconds, uint8_t minutes, uint8_t hours,ds1307_days_t day, uint8_t date,
 					ds1307_months_t month, uint16_t year, int8_t t_zone_hour, int8_t t_zone_min);
+
+void ds1307_log_uart(ds1307_dev_t *ds1307_dev);
 
 
 #endif /* DS1307_H_ */
