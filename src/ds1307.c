@@ -37,13 +37,6 @@ typedef enum{
 }ds1307_rate_t;
 
 
-/**
- * @brief 
- * 
- * @param ds1307_reg_addres 
- * @param data 
- * @return ds1307_err_t 
- */
 static ds1307_err_t ds1307_write_byte(uint8_t ds1307_reg_addres, uint8_t data);
 static uint8_t ds1307_read_byte(uint8_t ds1307_reg_addres);
 static uint8_t ds1307_bcd_decode(uint8_t data);
@@ -105,16 +98,17 @@ void ds1307_init(void){
 }
 
 /**
- * @brief 
+ * @brief To start the time and calendar, we must set the stop bit of the clock (CH) in 0, to stop, put the bit in 1
+ * more information see datasheet on page 4
  * 
- * @param halt 
+ * @param halt: 0 init, 1 stop
  */
 void ds1307_set_clock_halt(uint8_t halt){
 	uint8_t ch = (halt ? 1 << 7 : 0);
 	ds1307_write_byte(DS1307_SECONDS, ch | (ds1307_read_byte(DS1307_SECONDS) & 0x7F));
 }
 /**
- * @brief 
+ * @brief ds1307_get_clock_halt more info datasheet page 4
  * 
  * @return uint8_t 
  */
@@ -123,7 +117,7 @@ uint8_t ds1307_get_clock_halt(void){
 }
 
 /**
- * @brief 
+ * @brief ds1307_set_hour
  * 
  * @param hour 
  * @return ds1307_err_t 
@@ -132,7 +126,7 @@ ds1307_err_t ds1307_set_hour(uint8_t hour){
 	return ds1307_write_byte(DS1307_HOURS,ds1307_bcd_encode(hour & 0x3F));
 }
 /**
- * @brief 
+ * @brief ds1307_get_hour
  * 
  * @return uint8_t 
  */
@@ -141,7 +135,7 @@ uint8_t ds1307_get_hour(void){
 }
 
 /**
- * @brief 
+ * @brief ds1307_set_second
  * 
  * @param second 
  */
@@ -151,7 +145,7 @@ void ds1307_set_second(uint8_t second){
 
 }
 /**
- * @brief 
+ * @brief ds1307_get_second
  * 
  * @return uint8_t 
  */
@@ -159,7 +153,7 @@ uint8_t ds1307_get_second(void){
 	return ds1307_bcd_decode(ds1307_read_byte(DS1307_SECONDS) & 0x7F);
 }
 /**
- * @brief 
+ * @brief ds1307_set_minutes
  * 
  * @param minutes 
  */
@@ -167,7 +161,7 @@ void ds1307_set_minutes(uint8_t minutes){
 	ds1307_write_byte(DS1307_MINUTES, ds1307_bcd_encode(minutes));
 }
 /**
- * @brief 
+ * @brief ds1307_get_minutes
  * 
  * @return uint8_t 
  */
@@ -176,7 +170,7 @@ uint8_t ds1307_get_minutes(void){
 
 }
 /**
- * @brief 
+ * @brief ds1307_set_day
  * 
  * @param day 
  */
@@ -184,7 +178,7 @@ void ds1307_set_day(uint8_t day){
 	ds1307_write_byte(DS1307_DAY, ds1307_bcd_encode(day));
 }
 /**
- * @brief 
+ * @brief ds1307_get_day
  * 
  * @return ds1307_days_t 
  */
@@ -194,7 +188,7 @@ ds1307_days_t ds1307_get_day(void){
 
 
 /**
- * @brief 
+ * @brief ds1307_set_date
  * 
  * @param date 
  */
@@ -211,7 +205,7 @@ uint8_t ds1307_get_date(void){
 }
 
 /**
- * @brief 
+ * @brief ds1307_set_month
  * 
  * @param month 
  */
@@ -219,7 +213,7 @@ void ds1307_set_month(ds1307_months_t month){
 	ds1307_write_byte(DS1307_MONTH, ds1307_bcd_encode(month));
 }
 /**
- * @brief 
+ * @brief ds1307_get_month
  * 
  * @return ds1307_months_t 
  */
@@ -227,43 +221,56 @@ ds1307_months_t ds1307_get_month(void){
 	return ds1307_read_byte(ds1307_bcd_decode(DS1307_MONTH));
 }
 /**
- * @brief 
+ * @brief ds1307_set_year
  * 
- * @param year 
+ * @param year setup year
  */
 void ds1307_set_year(uint16_t year){
 	ds1307_write_byte(DS1307_REG_CENT, year / 100);
 	ds1307_write_byte(DS1307_YEAR, ds1307_bcd_encode(year % 100));
 }
 /**
- * @brief 
+ * @brief ds1307_get_year
  * 
- * @return uint16_t 
+ * @return uint16_t: current year
  */
 uint16_t ds1307_get_year(void){
-	uint16_t cen = ds1307_read_byte(DS1307_REG_CENT) * 100;
-	return ds1307_bcd_decode(ds1307_read_byte(DS1307_YEAR)) + cen;
+	uint16_t cent = ds1307_read_byte(DS1307_REG_CENT) * 100;
+	return ds1307_bcd_decode(ds1307_read_byte(DS1307_YEAR)) + cent;
 
 }
-
+/**
+ * @brief Set your time zone more info at https://everytimezone.com/
+ * 
+ * @param hr: current hour
+ * @param min: current min
+ */
 void ds1307_set_time_zone(int8_t hr, uint8_t min){
 	ds1307_write_byte(DS1307_REG_UTC_HR, hr);
 	ds1307_write_byte(DS1307_REG_UTC_MIN, min);
 }
-
+/**
+ * @brief Get the actual timezone-hour configured in the rtc
+ * 
+ * @return int8_t actual time zone
+ */
 int8_t ds1307_get_time_zone_hour(void){
 	return ds1307_read_byte(DS1307_REG_UTC_HR);
 }
-
+/**
+ * @brief  Get the actual timezone-min configured in the rtc
+ * 
+ * @return int8_t: actual time zone
+ */
 int8_t ds1307_get_time_zone_min(void){
 	return ds1307_read_byte(DS1307_REG_UTC_MIN);
 }
 
 
 /**
- * @brief 
+ * @brief Update ds1307 data
  * 
- * @param dev 
+ * @param dev: ds1307 pointer
  */
 void ds1307_update(ds1307_dev_t *ds1307_dev){
 
@@ -277,7 +284,19 @@ void ds1307_update(ds1307_dev_t *ds1307_dev){
 	ds1307_dev->t_zone_hour = ds1307_get_time_zone_hour();
 	ds1307_dev->t_zone_min = ds1307_get_time_zone_min();
 }
-
+/**
+ * @brief Use this function to configure the DS1307, you only need to call this function once on the the first run of your RTC.
+ * 
+ * @param seconds
+ * @param minutes 
+ * @param hours 
+ * @param day 
+ * @param date 
+ * @param month 
+ * @param year 
+ * @param t_zone_hour 
+ * @param t_zone_min 
+ */
 void ds1307_config(uint8_t seconds, uint8_t minutes, uint8_t hours,ds1307_days_t day, uint8_t date,
 					ds1307_months_t month, uint16_t year, int8_t t_zone_hour, int8_t t_zone_min)
 {
@@ -291,16 +310,20 @@ void ds1307_config(uint8_t seconds, uint8_t minutes, uint8_t hours,ds1307_days_t
 	ds1307_set_time_zone(t_zone_hour, t_zone_min);
 
 }
-
+/**
+ * @brief: Display ds1307 info by UART, @todo you need to implement your printf function!
+ * 
+ * @param: ds1307_dev ds1307 struct pointer
+ */
 void ds1307_log_uart(ds1307_dev_t *ds1307_dev){
-	DBG_print("%d:%d:%d %d:%d:%d\n",ds1307_dev->hours,ds1307_dev->minutes,ds1307_dev->seconds,
-			ds1307_dev->day,ds1307_dev->date,ds1307_dev->year);
+	DBG_print("%d:%d:%d %d/%d/%d\n",ds1307_dev->hours,ds1307_dev->minutes,ds1307_dev->seconds,
+			ds1307_dev->date,ds1307_dev->month,ds1307_dev->year);
 }
 /**
- * @brief 
+ * @brief This function helps to scan all connected devices on our I2C peripheral
  * 
- * @param I2Chnd 
- * @param delay_ 
+ * @param I2Chnd: I2C Handles
+ * @param delay_: Delay between scanning
  */
 void start_i2c_scan(I2C_HandleTypeDef *I2Chnd, uint32_t delay_){
 
